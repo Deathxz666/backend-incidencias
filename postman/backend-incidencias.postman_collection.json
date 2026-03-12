@@ -1,0 +1,353 @@
+﻿{
+    "info":  {
+                 "_postman_id":  "8f25f5fe-cf73-4285-93a9-9f4f2ec9d45a",
+                 "name":  "Backend Incidencias MVP",
+                 "description":  "Coleccion completa para auth, incidencias, filtros, estado y reportes.",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+             },
+    "item":  [
+                 {
+                     "name":  "Auth - Register User",
+                     "request":  {
+                                     "method":  "POST",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ],
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{\n  \"nombres\": \"Juan\",\n  \"apellido_paterno\": \"Perez\",\n  \"apellido_materno\": \"Lopez\",\n  \"puesto\": \"Soporte TI\",\n  \"email\": \"{{new_user_email}}\",\n  \"password\": \"{{new_user_password}}\"\n}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              }
+                                              },
+                                     "url":  {
+                                                 "raw":  "{{base_url}}/auth/register",
+                                                 "host":  [
+                                                              "{{base_url}}"
+                                                          ],
+                                                 "path":  [
+                                                              "auth",
+                                                              "register"
+                                                          ]
+                                             }
+                                 }
+                 },
+                 {
+                     "name":  "Auth - Login (Admin)",
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "type":  "text/javascript",
+                                                      "exec":  [
+                                                                   "const data = pm.response.json();",
+                                                                   "pm.collectionVariables.set(\u0027token\u0027, data.access_token);",
+                                                                   "pm.test(\u0027Token generado\u0027, function () {",
+                                                                   "  pm.expect(data).to.have.property(\u0027access_token\u0027);",
+                                                                   "});"
+                                                               ]
+                                                  }
+                                   }
+                               ],
+                     "request":  {
+                                     "method":  "POST",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ],
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              }
+                                              },
+                                     "url":  {
+                                                 "raw":  "{{base_url}}/auth/login",
+                                                 "host":  [
+                                                              "{{base_url}}"
+                                                          ],
+                                                 "path":  [
+                                                              "auth",
+                                                              "login"
+                                                          ]
+                                             }
+                                 }
+                 },
+                 {
+                     "name":  "Auth - Profile",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Authorization",
+                                                        "value":  "Bearer {{token}}"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{base_url}}/auth/profile",
+                                                 "host":  [
+                                                              "{{base_url}}"
+                                                          ],
+                                                 "path":  [
+                                                              "auth",
+                                                              "profile"
+                                                          ]
+                                             }
+                                 }
+                 },
+                 {
+                     "name":  "Incidencias - Crear",
+                     "request":  {
+                                     "method":  "POST",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    },
+                                                    {
+                                                        "key":  "Authorization",
+                                                        "value":  "Bearer {{token}}"
+                                                    }
+                                                ],
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{\n  \"titulo\": \"No funciona impresora\",\n  \"descripcion\": \"La impresora del area de caja no responde.\"\n}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              }
+                                              },
+                                     "url":  {
+                                                 "raw":  "{{base_url}}/incidencias",
+                                                 "host":  [
+                                                              "{{base_url}}"
+                                                          ],
+                                                 "path":  [
+                                                              "incidencias"
+                                                          ]
+                                             }
+                                 }
+                 },
+                 {
+                     "name":  "Incidencias - Listar (con filtros)",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Authorization",
+                                                        "value":  "Bearer {{token}}"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{base_url}}/incidencias?page=1\u0026limit=10\u0026search=\u0026estado=\u0026from=\u0026to=\u0026sortBy=fecha_creacion\u0026sortOrder=DESC",
+                                                 "host":  [
+                                                              "{{base_url}}"
+                                                          ],
+                                                 "path":  [
+                                                              "incidencias"
+                                                          ],
+                                                 "query":  [
+                                                               {
+                                                                   "key":  "page",
+                                                                   "value":  "1"
+                                                               },
+                                                               {
+                                                                   "key":  "limit",
+                                                                   "value":  "10"
+                                                               },
+                                                               {
+                                                                   "key":  "search",
+                                                                   "value":  ""
+                                                               },
+                                                               {
+                                                                   "key":  "estado",
+                                                                   "value":  ""
+                                                               },
+                                                               {
+                                                                   "key":  "from",
+                                                                   "value":  ""
+                                                               },
+                                                               {
+                                                                   "key":  "to",
+                                                                   "value":  ""
+                                                               },
+                                                               {
+                                                                   "key":  "sortBy",
+                                                                   "value":  "fecha_creacion"
+                                                               },
+                                                               {
+                                                                   "key":  "sortOrder",
+                                                                   "value":  "DESC"
+                                                               }
+                                                           ]
+                                             }
+                                 }
+                 },
+                 {
+                     "name":  "Incidencias - Editar",
+                     "request":  {
+                                     "method":  "PATCH",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    },
+                                                    {
+                                                        "key":  "Authorization",
+                                                        "value":  "Bearer {{token}}"
+                                                    }
+                                                ],
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{\n  \"titulo\": \"Titulo actualizado\",\n  \"descripcion\": \"Descripcion actualizada\"\n}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              }
+                                              },
+                                     "url":  {
+                                                 "raw":  "{{base_url}}/incidencias/{{incidencia_id}}",
+                                                 "host":  [
+                                                              "{{base_url}}"
+                                                          ],
+                                                 "path":  [
+                                                              "incidencias",
+                                                              "{{incidencia_id}}"
+                                                          ]
+                                             }
+                                 }
+                 },
+                 {
+                     "name":  "Incidencias - Cambiar Estado",
+                     "request":  {
+                                     "method":  "PATCH",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    },
+                                                    {
+                                                        "key":  "Authorization",
+                                                        "value":  "Bearer {{token}}"
+                                                    }
+                                                ],
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{\n  \"estado\": \"en_progreso\"\n}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              }
+                                              },
+                                     "url":  {
+                                                 "raw":  "{{base_url}}/incidencias/{{incidencia_id}}/estado",
+                                                 "host":  [
+                                                              "{{base_url}}"
+                                                          ],
+                                                 "path":  [
+                                                              "incidencias",
+                                                              "{{incidencia_id}}",
+                                                              "estado"
+                                                          ]
+                                             }
+                                 }
+                 },
+                 {
+                     "name":  "Incidencias - Eliminar (Admin)",
+                     "request":  {
+                                     "method":  "DELETE",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Authorization",
+                                                        "value":  "Bearer {{token}}"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{base_url}}/incidencias/{{incidencia_id}}",
+                                                 "host":  [
+                                                              "{{base_url}}"
+                                                          ],
+                                                 "path":  [
+                                                              "incidencias",
+                                                              "{{incidencia_id}}"
+                                                          ]
+                                             }
+                                 }
+                 },
+                 {
+                     "name":  "Incidencias - Reportes (Admin)",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Authorization",
+                                                        "value":  "Bearer {{token}}"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{base_url}}/incidencias/reportes?from=\u0026to=",
+                                                 "host":  [
+                                                              "{{base_url}}"
+                                                          ],
+                                                 "path":  [
+                                                              "incidencias",
+                                                              "reportes"
+                                                          ],
+                                                 "query":  [
+                                                               {
+                                                                   "key":  "from",
+                                                                   "value":  ""
+                                                               },
+                                                               {
+                                                                   "key":  "to",
+                                                                   "value":  ""
+                                                               }
+                                                           ]
+                                             }
+                                 }
+                 }
+             ],
+    "variable":  [
+                     {
+                         "key":  "base_url",
+                         "value":  "http://localhost:3000"
+                     },
+                     {
+                         "key":  "token",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "admin_email",
+                         "value":  "admin@demo.com"
+                     },
+                     {
+                         "key":  "admin_password",
+                         "value":  "123456"
+                     },
+                     {
+                         "key":  "new_user_email",
+                         "value":  "user1@demo.com"
+                     },
+                     {
+                         "key":  "new_user_password",
+                         "value":  "123456"
+                     },
+                     {
+                         "key":  "incidencia_id",
+                         "value":  ""
+                     }
+                 ]
+}
