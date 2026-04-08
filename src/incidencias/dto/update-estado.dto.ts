@@ -2,7 +2,7 @@ import { IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class UpdateEstadoDto {
   @IsString()
-  @IsIn(['pendiente', 'en_progreso', 'resuelta'])
+  @IsIn(['pendiente', 'en progreso', 'resuelta'])
   estado: string;
 
   @IsOptional()

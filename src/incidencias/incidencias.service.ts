@@ -348,13 +348,12 @@ export class IncidenciasService {
     doc.moveDown(0.2);
 
     const columns = [
-      { key: 'titulo', label: 'Titulo', width: 62 },
-      { key: 'descripcion', label: 'Descripcion', width: 88 },
-      { key: 'clasificacion', label: 'Clasif.', width: 48 },
-      { key: 'tipo_mantenimiento', label: 'Mant.', width: 54 },
+      { key: 'titulo', label: 'Titulo', width: 58 },
       { key: 'usuario', label: 'Usuario', width: 62 },
+      { key: 'asignado_a', label: 'Asignado a', width: 62 },
       { key: 'estado', label: 'Estado', width: 42 },
-      { key: 'descripcion_solucion', label: 'Solucion', width: 69 },
+      { key: 'descripcion_solucion', label: 'Solucion', width: 85 },
+      { key: 'tiempo_solucion', label: 'Tiempo', width: 45 },
       { key: 'fecha_creacion', label: 'Creacion', width: 45 },
       { key: 'fecha_actualizacion', label: 'Edicion', width: 45 },
     ];
@@ -458,6 +457,20 @@ export class IncidenciasService {
       .leftJoinAndSelect('incidencia.estado', 'estado')
       .leftJoinAndSelect('incidencia.usuario', 'usuario');
 
+    if (query.search) {
+      const search = `%${query.search.toLowerCase()}%`;
+      qb.andWhere(
+        `(
+          LOWER(incidencia.titulo) LIKE :search OR
+          LOWER(COALESCE(incidencia.descripcion_solucion, '')) LIKE :search OR
+          LOWER(usuario.nombres) LIKE :search OR
+          LOWER(usuario.apellido_paterno) LIKE :search OR
+          LOWER(usuario.apellido_materno) LIKE :search
+        )`,
+        { search },
+      );
+    }
+
     const { fromDate, toDate } = this.getDateRange(query.from, query.to);
     if (fromDate) qb.andWhere('incidencia.fecha_creacion >= :fromDate', { fromDate });
     if (toDate) qb.andWhere('incidencia.fecha_creacion <= :toDate', { toDate });
@@ -471,8 +484,8 @@ export class IncidenciasService {
     }, {} as Record<string, number>);
 
     const porUsuario = incidencias.reduce((acc, incidencia) => {
-      const email = incidencia.usuario?.email || 'sin_usuario';
-      acc[email] = (acc[email] || 0) + 1;
+      const usuario = this.formatUserName(incidencia.usuario);
+      acc[usuario] = (acc[usuario] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
@@ -487,6 +500,25 @@ export class IncidenciasService {
       acc[mantenimiento] = (acc[mantenimiento] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
+
+    const userEmails = Array.from(
+      new Set(
+        incidencias
+          .map((incidencia) => incidencia.updated_by)
+          .filter((value): value is string => Boolean(value)),
+      ),
+    );
+
+    const assignedUsers = userEmails.length
+      ? await this.userRepository
+          .createQueryBuilder('user')
+          .where('user.email IN (:...emails)', { emails: userEmails })
+          .getMany()
+      : [];
+
+    const assignedUserMap = new Map<string, User>(
+      assignedUsers.map((user) => [user.email, user]),
+    );
 
     const reportByUser = await this.userRepository.findOne({
       where: { email: reportByEmail },
@@ -532,7 +564,15 @@ export class IncidenciasService {
         tipo_mantenimiento: incidencia.tipo_mantenimiento || '-',
         descripcion_solucion: incidencia.descripcion_solucion || '-',
         usuario_nombre: this.formatUserName(incidencia.usuario),
-        usuario: incidencia.usuario?.email || 'sin_usuario',
+        usuario: this.formatUserName(incidencia.usuario),
+        asignado_a: this.formatUserName(
+          assignedUserMap.get(incidencia.updated_by || '') || null,
+        ),
+        tiempo_solucion: this.calculateResolutionTime(
+          incidencia.fecha_creacion,
+          incidencia.fecha_actualizacion,
+          incidencia.estado?.nombre_estado,
+        ),
         estado: incidencia.estado?.nombre_estado || 'sin_estado',
         estado_color: incidencia.estado?.color || '#6B7280',
         fecha_creacion: incidencia.fecha_creacion?.toLocaleString() || '-',
@@ -551,6 +591,32 @@ export class IncidenciasService {
       .join(' ')
       .trim();
     return parts || usuario.email || 'sin_usuario';
+  }
+
+  private calculateResolutionTime(
+    fechaCreacion?: Date | null,
+    fechaActualizacion?: Date | null,
+    estado?: string,
+  ) {
+    if (!fechaCreacion || !fechaActualizacion || estado !== 'resuelta') {
+      return 'Pendiente';
+    }
+
+    const diffMs = fechaActualizacion.getTime() - fechaCreacion.getTime();
+    if (diffMs < 0) {
+      return 'Pendiente';
+    }
+
+    const totalMinutes = Math.floor(diffMs / (1000 * 60));
+    const days = Math.floor(totalMinutes / (60 * 24));
+    const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+    const minutes = totalMinutes % 60;
+
+    const parts: string[] = [];
+    if (days) parts.push(`${days}d`);
+    if (hours) parts.push(`${hours}h`);
+    parts.push(`${minutes}m`);
+    return parts.join(' ');
   }
 
   private ensureCanEdit(incidencia: Incidencia, userEmail: string, role: string) {
