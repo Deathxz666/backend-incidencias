@@ -20,6 +20,8 @@ let Incidencia = class Incidencia {
     clasificacion;
     tipo_mantenimiento;
     descripcion_solucion;
+    asignado_a;
+    tiempo_solucion;
     estado;
     usuario;
     created_by;
@@ -60,6 +62,14 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'text', nullable: true }),
     __metadata("design:type", Object)
 ], Incidencia.prototype, "descripcion_solucion", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 120, nullable: true }),
+    __metadata("design:type", Object)
+], Incidencia.prototype, "asignado_a", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 60, nullable: true }),
+    __metadata("design:type", Object)
+], Incidencia.prototype, "tiempo_solucion", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => estado_entity_1.Estado, (estado) => estado.incidencias),
     (0, typeorm_1.JoinColumn)({ name: 'id_estado' }),

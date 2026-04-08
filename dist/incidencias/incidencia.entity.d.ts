@@ -9,6 +9,8 @@ export declare class Incidencia {
     clasificacion: ClasificacionIncidencia;
     tipo_mantenimiento: TipoMantenimiento;
     descripcion_solucion: string | null;
+    asignado_a: string | null;
+    tiempo_solucion: string | null;
     estado: Estado;
     usuario: User;
     created_by: string;

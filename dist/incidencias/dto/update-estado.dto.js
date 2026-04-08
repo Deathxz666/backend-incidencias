@@ -14,11 +14,13 @@ const class_validator_1 = require("class-validator");
 class UpdateEstadoDto {
     estado;
     descripcion_solucion;
+    asignado_a;
+    tiempo_solucion;
 }
 exports.UpdateEstadoDto = UpdateEstadoDto;
 __decorate([
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsIn)(['pendiente', 'en_progreso', 'resuelta']),
+    (0, class_validator_1.IsIn)(['pendiente', 'en progreso', 'resuelta']),
     __metadata("design:type", String)
 ], UpdateEstadoDto.prototype, "estado", void 0);
 __decorate([
@@ -27,4 +29,16 @@ __decorate([
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], UpdateEstadoDto.prototype, "descripcion_solucion", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], UpdateEstadoDto.prototype, "asignado_a", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], UpdateEstadoDto.prototype, "tiempo_solucion", void 0);
 //# sourceMappingURL=update-estado.dto.js.map

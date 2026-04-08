@@ -41,9 +41,17 @@ let SeedService = class SeedService {
     async seedEstados() {
         const estados = [
             { nombre_estado: 'pendiente', color: '#F59E0B' },
-            { nombre_estado: 'en_progreso', color: '#3B82F6' },
+            { nombre_estado: 'en progreso', color: '#3B82F6' },
             { nombre_estado: 'resuelta', color: '#10B981' },
         ];
+        const estadoLegacy = await this.estadoRepository.findOne({
+            where: { nombre_estado: 'en_progreso' },
+        });
+        if (estadoLegacy) {
+            estadoLegacy.nombre_estado = 'en progreso';
+            estadoLegacy.color = '#3B82F6';
+            await this.estadoRepository.save(estadoLegacy);
+        }
         for (const estadoData of estados) {
             const exists = await this.estadoRepository.findOne({
                 where: { nombre_estado: estadoData.nombre_estado },

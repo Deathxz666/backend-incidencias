@@ -57,6 +57,8 @@ export declare class IncidenciasController {
             descripcion_solucion: string;
             usuario_nombre: string;
             usuario: string;
+            asignado_a: string;
+            tiempo_solucion: string;
             estado: string;
             estado_color: string;
             fecha_creacion: string;

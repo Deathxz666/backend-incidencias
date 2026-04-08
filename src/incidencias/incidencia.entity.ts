@@ -41,6 +41,12 @@ export class Incidencia {
   @Column({ type: 'text', nullable: true })
   descripcion_solucion: string | null;
 
+  @Column({ type: 'varchar', length: 120, nullable: true })
+  asignado_a: string | null;
+
+  @Column({ type: 'varchar', length: 60, nullable: true })
+  tiempo_solucion: string | null;
+
   @ManyToOne(() => Estado, (estado) => estado.incidencias)
   @JoinColumn({ name: 'id_estado' })
   estado: Estado;

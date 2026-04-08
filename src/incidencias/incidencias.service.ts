@@ -78,6 +78,8 @@ export class IncidenciasService {
             LOWER(incidencia.clasificacion) LIKE :search OR
             LOWER(incidencia.tipo_mantenimiento) LIKE :search OR
             LOWER(COALESCE(incidencia.descripcion_solucion, '')) LIKE :search OR
+            LOWER(COALESCE(incidencia.asignado_a, '')) LIKE :search OR
+            LOWER(COALESCE(incidencia.tiempo_solucion, '')) LIKE :search OR
             LOWER(usuario.email) LIKE :search OR
             LOWER(usuario.nombres) LIKE :search OR
             LOWER(usuario.apellido_paterno) LIKE :search OR
@@ -92,7 +94,9 @@ export class IncidenciasService {
             LOWER(incidencia.descripcion) LIKE :search OR
             LOWER(incidencia.clasificacion) LIKE :search OR
             LOWER(incidencia.tipo_mantenimiento) LIKE :search OR
-            LOWER(COALESCE(incidencia.descripcion_solucion, '')) LIKE :search
+            LOWER(COALESCE(incidencia.descripcion_solucion, '')) LIKE :search OR
+            LOWER(COALESCE(incidencia.asignado_a, '')) LIKE :search OR
+            LOWER(COALESCE(incidencia.tiempo_solucion, '')) LIKE :search
           )`,
           { search },
         );
@@ -159,6 +163,8 @@ export class IncidenciasService {
             LOWER(incidencia.titulo) LIKE :search OR
             LOWER(incidencia.descripcion) LIKE :search OR
             LOWER(incidencia.descripcion_solucion) LIKE :search OR
+            LOWER(COALESCE(incidencia.asignado_a, '')) LIKE :search OR
+            LOWER(COALESCE(incidencia.tiempo_solucion, '')) LIKE :search OR
             LOWER(usuario.email) LIKE :search OR
             LOWER(usuario.nombres) LIKE :search OR
             LOWER(usuario.apellido_paterno) LIKE :search OR
@@ -171,7 +177,9 @@ export class IncidenciasService {
           `(
             LOWER(incidencia.titulo) LIKE :search OR
             LOWER(incidencia.descripcion) LIKE :search OR
-            LOWER(incidencia.descripcion_solucion) LIKE :search
+            LOWER(incidencia.descripcion_solucion) LIKE :search OR
+            LOWER(COALESCE(incidencia.asignado_a, '')) LIKE :search OR
+            LOWER(COALESCE(incidencia.tiempo_solucion, '')) LIKE :search
           )`,
           { search },
         );
@@ -263,15 +271,30 @@ export class IncidenciasService {
       throw new NotFoundException('Estado no encontrado');
     }
 
-    if (estado.nombre_estado === 'resuelta' && !updateEstadoDto.descripcion_solucion?.trim()) {
+    if (estado.nombre_estado === 'en progreso' && !updateEstadoDto.asignado_a?.trim()) {
       throw new BadRequestException(
-        'La descripcion de solucion es obligatoria cuando la incidencia pasa a resuelta',
+        'Debes ingresar la persona asignada cuando la incidencia pasa a en progreso',
+      );
+    }
+
+    if (
+      estado.nombre_estado === 'resuelta' &&
+      (!updateEstadoDto.descripcion_solucion?.trim() || !updateEstadoDto.tiempo_solucion?.trim())
+    ) {
+      throw new BadRequestException(
+        'La descripcion de solucion y el tiempo de solucion son obligatorios cuando la incidencia pasa a resuelta',
       );
     }
 
     incidencia.estado = estado;
+    if (updateEstadoDto.asignado_a !== undefined) {
+      incidencia.asignado_a = updateEstadoDto.asignado_a.trim();
+    }
     if (updateEstadoDto.descripcion_solucion !== undefined) {
       incidencia.descripcion_solucion = updateEstadoDto.descripcion_solucion.trim();
+    }
+    if (updateEstadoDto.tiempo_solucion !== undefined) {
+      incidencia.tiempo_solucion = updateEstadoDto.tiempo_solucion.trim();
     }
     incidencia.updated_by = userEmail;
 
@@ -349,7 +372,7 @@ export class IncidenciasService {
 
     const columns = [
       { key: 'titulo', label: 'Titulo', width: 58 },
-      { key: 'usuario', label: 'Usuario', width: 62 },
+      { key: 'usuario_nombre', label: 'Usuario', width: 62 },
       { key: 'asignado_a', label: 'Asignado a', width: 62 },
       { key: 'estado', label: 'Estado', width: 42 },
       { key: 'descripcion_solucion', label: 'Solucion', width: 85 },
@@ -463,6 +486,7 @@ export class IncidenciasService {
         `(
           LOWER(incidencia.titulo) LIKE :search OR
           LOWER(COALESCE(incidencia.descripcion_solucion, '')) LIKE :search OR
+          LOWER(COALESCE(incidencia.asignado_a, '')) LIKE :search OR
           LOWER(usuario.nombres) LIKE :search OR
           LOWER(usuario.apellido_paterno) LIKE :search OR
           LOWER(usuario.apellido_materno) LIKE :search
@@ -500,25 +524,6 @@ export class IncidenciasService {
       acc[mantenimiento] = (acc[mantenimiento] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-
-    const userEmails = Array.from(
-      new Set(
-        incidencias
-          .map((incidencia) => incidencia.updated_by)
-          .filter((value): value is string => Boolean(value)),
-      ),
-    );
-
-    const assignedUsers = userEmails.length
-      ? await this.userRepository
-          .createQueryBuilder('user')
-          .where('user.email IN (:...emails)', { emails: userEmails })
-          .getMany()
-      : [];
-
-    const assignedUserMap = new Map<string, User>(
-      assignedUsers.map((user) => [user.email, user]),
-    );
 
     const reportByUser = await this.userRepository.findOne({
       where: { email: reportByEmail },
@@ -565,14 +570,8 @@ export class IncidenciasService {
         descripcion_solucion: incidencia.descripcion_solucion || '-',
         usuario_nombre: this.formatUserName(incidencia.usuario),
         usuario: this.formatUserName(incidencia.usuario),
-        asignado_a: this.formatUserName(
-          assignedUserMap.get(incidencia.updated_by || '') || null,
-        ),
-        tiempo_solucion: this.calculateResolutionTime(
-          incidencia.fecha_creacion,
-          incidencia.fecha_actualizacion,
-          incidencia.estado?.nombre_estado,
-        ),
+        asignado_a: incidencia.asignado_a || '-',
+        tiempo_solucion: incidencia.tiempo_solucion || 'Pendiente',
         estado: incidencia.estado?.nombre_estado || 'sin_estado',
         estado_color: incidencia.estado?.color || '#6B7280',
         fecha_creacion: incidencia.fecha_creacion?.toLocaleString() || '-',
@@ -591,32 +590,6 @@ export class IncidenciasService {
       .join(' ')
       .trim();
     return parts || usuario.email || 'sin_usuario';
-  }
-
-  private calculateResolutionTime(
-    fechaCreacion?: Date | null,
-    fechaActualizacion?: Date | null,
-    estado?: string,
-  ) {
-    if (!fechaCreacion || !fechaActualizacion || estado !== 'resuelta') {
-      return 'Pendiente';
-    }
-
-    const diffMs = fechaActualizacion.getTime() - fechaCreacion.getTime();
-    if (diffMs < 0) {
-      return 'Pendiente';
-    }
-
-    const totalMinutes = Math.floor(diffMs / (1000 * 60));
-    const days = Math.floor(totalMinutes / (60 * 24));
-    const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
-    const minutes = totalMinutes % 60;
-
-    const parts: string[] = [];
-    if (days) parts.push(`${days}d`);
-    if (hours) parts.push(`${hours}h`);
-    parts.push(`${minutes}m`);
-    return parts.join(' ');
   }
 
   private ensureCanEdit(incidencia: Incidencia, userEmail: string, role: string) {
