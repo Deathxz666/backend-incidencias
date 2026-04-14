@@ -342,13 +342,31 @@ export class IncidenciasService {
     }
 
     const report = await this.buildReportData(query, reportByEmail);
-    const doc = new PDFDocument({ margin: 30, size: 'A4', layout: 'landscape' });
+    const columns = [
+      { key: 'titulo', label: 'Titulo', width: 60 },
+      { key: 'descripcion', label: 'Descripcion', width: 88 },
+      { key: 'clasificacion', label: 'Clasificacion', width: 55 },
+      { key: 'tipo_mantenimiento', label: 'Mantenimiento', width: 60 },
+      { key: 'usuario_nombre', label: 'Usuario', width: 64 },
+      { key: 'asignado_a', label: 'Asignado a', width: 62 },
+      { key: 'estado', label: 'Estado', width: 52 },
+      { key: 'descripcion_solucion', label: 'Solucion', width: 88 },
+      { key: 'tiempo_solucion', label: 'Tiempo', width: 46 },
+      { key: 'fecha_creacion', label: 'Creacion', width: 52 },
+      { key: 'fecha_actualizacion', label: 'Edicion', width: 52 },
+    ];
+    const tableWidth = columns.reduce((sum, col) => sum + col.width, 0);
+    const margin = 30;
+    const portraitUsableWidth = 612 - margin * 2; // LETTER portrait width
+    const layout: 'portrait' | 'landscape' =
+      tableWidth <= portraitUsableWidth ? 'portrait' : 'landscape';
+    const doc = new PDFDocument({ margin, size: 'LETTER', layout });
     const buffers: Buffer[] = [];
 
     doc.on('data', (chunk) => buffers.push(chunk));
     const pageWidth = doc.page.width;
-    const left = 30;
-    const right = pageWidth - 30;
+    const left = margin;
+    const right = pageWidth - margin;
 
     doc.fillColor('#111827').font('Helvetica-Bold').fontSize(19).text('REPORTE DE INCIDENCIAS', 0, 28, {
       align: 'center',
@@ -383,25 +401,11 @@ export class IncidenciasService {
     doc.font('Helvetica-Bold').fontSize(12).text('Detalle de incidencias');
     doc.moveDown(0.2);
 
-    const columns = [
-      { key: 'titulo', label: 'Titulo', width: 60 },
-      { key: 'descripcion', label: 'Descripcion', width: 88 },
-      { key: 'clasificacion', label: 'Clasificacion', width: 55 },
-      { key: 'tipo_mantenimiento', label: 'Mantenimiento', width: 60 },
-      { key: 'usuario_nombre', label: 'Usuario', width: 64 },
-      { key: 'asignado_a', label: 'Asignado a', width: 62 },
-      { key: 'estado', label: 'Estado', width: 52 },
-      { key: 'descripcion_solucion', label: 'Solucion', width: 88 },
-      { key: 'tiempo_solucion', label: 'Tiempo', width: 46 },
-      { key: 'fecha_creacion', label: 'Creacion', width: 52 },
-      { key: 'fecha_actualizacion', label: 'Edicion', width: 52 },
-    ];
-    const tableWidth = columns.reduce((sum, col) => sum + col.width, 0);
     const headerHeight = 20;
     const minRowHeight = 20;
     const cellPaddingX = 4;
     const cellPaddingY = 4;
-    const tableBottomLimit = doc.page.height - 30;
+    const tableBottomLimit = doc.page.height - margin;
     const xPositions = columns.reduce<number[]>((acc, col, idx) => {
       if (idx === 0) {
         acc.push(left);
