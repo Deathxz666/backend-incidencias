@@ -457,8 +457,13 @@ export class IncidenciasService {
       doc.font('Helvetica').fontSize(7.5);
       const estadoColor = item.estado_color || '#111827';
       columns.forEach((col, idx) => {
+        const rawValue = item[col.key];
+        const displayValue =
+          col.key === 'fecha_creacion' || col.key === 'fecha_actualizacion'
+            ? this.formatDateTimeLaPaz(rawValue)
+            : ((rawValue || '-') as string);
         doc.fillColor(col.key === 'estado' ? estadoColor : '#111827');
-        doc.text((item[col.key] || '-').toString(), xPositions[idx] + cellPaddingX, y + cellPaddingY, {
+        doc.text(displayValue.toString(), xPositions[idx] + cellPaddingX, y + cellPaddingY, {
           width: col.width - cellPaddingX * 2,
           lineGap: 0,
         });
@@ -594,11 +599,31 @@ export class IncidenciasService {
         tiempo_solucion: incidencia.tiempo_solucion || 'Pendiente',
         estado: incidencia.estado?.nombre_estado || 'sin_estado',
         estado_color: incidencia.estado?.color || '#6B7280',
-        fecha_creacion: incidencia.fecha_creacion?.toLocaleString() || '-',
-        fecha_actualizacion: incidencia.fecha_actualizacion?.toLocaleString() || '-',
+        fecha_creacion: incidencia.fecha_creacion?.toISOString() || null,
+        fecha_actualizacion: incidencia.fecha_actualizacion?.toISOString() || null,
         updated_by: incidencia.updated_by,
       })),
     };
+  }
+
+  private formatDateTimeLaPaz(value: unknown) {
+    if (!value) {
+      return '-';
+    }
+    const date = new Date(value as string | number | Date);
+    if (Number.isNaN(date.getTime())) {
+      return '-';
+    }
+    return new Intl.DateTimeFormat('es-BO', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+      timeZone: 'America/La_Paz',
+    }).format(date);
   }
 
   private formatUserName(usuario?: User | null) {
