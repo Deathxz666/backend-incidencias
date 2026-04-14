@@ -229,9 +229,14 @@ export class IncidenciasService {
 
     this.ensureCanEdit(incidencia, userEmail, role);
 
-    if (updateDto.descripcion_solucion !== undefined && role !== 'admin') {
+    if (
+      (updateDto.descripcion_solucion !== undefined ||
+        updateDto.asignado_a !== undefined ||
+        updateDto.tiempo_solucion !== undefined) &&
+      role !== 'admin'
+    ) {
       throw new ForbiddenException(
-        'Solo el administrador puede registrar o editar la descripcion de solucion',
+        'Solo el administrador puede registrar o editar solucion, asignacion y tiempo de solucion',
       );
     }
 
@@ -239,7 +244,15 @@ export class IncidenciasService {
     incidencia.descripcion = updateDto.descripcion ?? incidencia.descripcion;
     incidencia.clasificacion = updateDto.clasificacion ?? incidencia.clasificacion;
     incidencia.tipo_mantenimiento = updateDto.tipo_mantenimiento ?? incidencia.tipo_mantenimiento;
-    incidencia.descripcion_solucion = updateDto.descripcion_solucion ?? incidencia.descripcion_solucion;
+    if (updateDto.descripcion_solucion !== undefined) {
+      incidencia.descripcion_solucion = updateDto.descripcion_solucion.trim();
+    }
+    if (updateDto.asignado_a !== undefined) {
+      incidencia.asignado_a = updateDto.asignado_a.trim();
+    }
+    if (updateDto.tiempo_solucion !== undefined) {
+      incidencia.tiempo_solucion = updateDto.tiempo_solucion.trim();
+    }
     incidencia.updated_by = userEmail;
 
     return this.incidenciaRepository.save(incidencia);
@@ -329,13 +342,13 @@ export class IncidenciasService {
     }
 
     const report = await this.buildReportData(query, reportByEmail);
-    const doc = new PDFDocument({ margin: 40, size: 'A4' });
+    const doc = new PDFDocument({ margin: 30, size: 'A4', layout: 'landscape' });
     const buffers: Buffer[] = [];
 
     doc.on('data', (chunk) => buffers.push(chunk));
     const pageWidth = doc.page.width;
-    const left = 40;
-    const right = pageWidth - 40;
+    const left = 30;
+    const right = pageWidth - 30;
 
     doc.fillColor('#111827').font('Helvetica-Bold').fontSize(19).text('REPORTE DE INCIDENCIAS', 0, 28, {
       align: 'center',
@@ -371,21 +384,24 @@ export class IncidenciasService {
     doc.moveDown(0.2);
 
     const columns = [
-      { key: 'titulo', label: 'Titulo', width: 58 },
-      { key: 'usuario_nombre', label: 'Usuario', width: 62 },
+      { key: 'titulo', label: 'Titulo', width: 60 },
+      { key: 'descripcion', label: 'Descripcion', width: 88 },
+      { key: 'clasificacion', label: 'Clasificacion', width: 55 },
+      { key: 'tipo_mantenimiento', label: 'Mantenimiento', width: 60 },
+      { key: 'usuario_nombre', label: 'Usuario', width: 64 },
       { key: 'asignado_a', label: 'Asignado a', width: 62 },
-      { key: 'estado', label: 'Estado', width: 42 },
-      { key: 'descripcion_solucion', label: 'Solucion', width: 85 },
-      { key: 'tiempo_solucion', label: 'Tiempo', width: 45 },
-      { key: 'fecha_creacion', label: 'Creacion', width: 45 },
-      { key: 'fecha_actualizacion', label: 'Edicion', width: 45 },
+      { key: 'estado', label: 'Estado', width: 52 },
+      { key: 'descripcion_solucion', label: 'Solucion', width: 88 },
+      { key: 'tiempo_solucion', label: 'Tiempo', width: 46 },
+      { key: 'fecha_creacion', label: 'Creacion', width: 52 },
+      { key: 'fecha_actualizacion', label: 'Edicion', width: 52 },
     ];
     const tableWidth = columns.reduce((sum, col) => sum + col.width, 0);
     const headerHeight = 20;
     const minRowHeight = 20;
     const cellPaddingX = 4;
     const cellPaddingY = 4;
-    const tableBottomLimit = doc.page.height - 40;
+    const tableBottomLimit = doc.page.height - 30;
     const xPositions = columns.reduce<number[]>((acc, col, idx) => {
       if (idx === 0) {
         acc.push(left);
